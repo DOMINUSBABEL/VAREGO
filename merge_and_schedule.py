@@ -47,37 +47,19 @@ if len(all_posts) >= 151:
 else:
     print(f"ADVERTENCIA: Se generaron solo {len(all_posts)} posts.")
 
-# Cronograma: 19 de Mayo 2026
-# 26 posts: 12:37 AM a 01:27 AM
-# 65 posts: 05:17 AM a 11:00 AM
-# 30 posts: 11:00 AM a 03:00 PM (15:00)
-# 30 posts: 03:00 PM (15:00) a 06:00 PM (18:00)
-def r_dates(s, e, c):
-    delta = (e - s).total_seconds()
-    return [s + datetime.timedelta(seconds=random.uniform(0, delta)) for _ in range(c)]
+# Cronograma Secuencial Estocástico: 19 de Mayo 2026
+# Inicia a las 5:17 AM.
+# Espaciado aleatorio: mínimo (5 a 9 min), máximo (15 a 25 min)
 
-d1_s = datetime.datetime(2026, 5, 19, 0, 37)
-d1_e = datetime.datetime(2026, 5, 19, 1, 27)
-
-d2_s = datetime.datetime(2026, 5, 19, 5, 17)
-d2_e = datetime.datetime(2026, 5, 19, 11, 0)
-
-d3_s = datetime.datetime(2026, 5, 19, 11, 0)
-d3_e = datetime.datetime(2026, 5, 19, 15, 0)
-
-d4_s = datetime.datetime(2026, 5, 19, 15, 0)
-d4_e = datetime.datetime(2026, 5, 19, 18, 0)
-
+current_time = datetime.datetime(2026, 5, 19, 5, 17)
 sched = []
-sched.extend(r_dates(d1_s, d1_e, 26))
-sched.extend(r_dates(d2_s, d2_e, 65))
-sched.extend(r_dates(d3_s, d3_e, 30))
 
-remaining = len(all_posts) - 121
-if remaining > 0:
-    sched.extend(r_dates(d4_s, d4_e, remaining))
-
-sched.sort()
+for _ in range(len(all_posts)):
+    sched.append(current_time)
+    min_gap = random.uniform(5, 9)
+    max_gap = random.uniform(15, 25)
+    gap_minutes = random.uniform(min_gap, max_gap)
+    current_time += datetime.timedelta(minutes=gap_minutes)
 
 final_data = []
 for i in range(len(all_posts)):
