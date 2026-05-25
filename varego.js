@@ -223,6 +223,12 @@ const path = require('path');
                         }
                         if (matchedValue) {
                             await handle.select(matchedValue);
+                            await handle.evaluate((sel, val) => {
+                                sel.value = val;
+                                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                                sel.dispatchEvent(new Event('input', { bubbles: true }));
+                            }, matchedValue);
+                            await new Promise(r => setTimeout(r, 300));
                             return `selected_${matchedValue}`;
                         }
                         return `value_${targetStr}_not_found`;
@@ -268,6 +274,12 @@ const path = require('path');
                         }
                         if (matchedValue) {
                             await selects[selectRoles.ampmIdx].select(matchedValue);
+                            await selects[selectRoles.ampmIdx].evaluate((sel, val) => {
+                                sel.value = val;
+                                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                                sel.dispatchEvent(new Event('input', { bubbles: true }));
+                            }, matchedValue);
+                            await new Promise(r => setTimeout(r, 300));
                             selectStatus.ampm = `selected_${matchedValue}`;
                         } else {
                             selectStatus.ampm = `target_${targetText}_not_found`;
