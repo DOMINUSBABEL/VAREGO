@@ -134,10 +134,10 @@ validateTemplates(TEMPLATES);
 // Scrapes the home feed for candidate status URLs
 const scrapeHomeFeed = async (page, targetCount) => {
     console.log("Scraping home feed for For You posts...");
-    let candidates = new Set();
+    let candidatesMap = new Map();
     let scrollAttempts = 0;
     
-    while (candidates.size < targetCount && scrollAttempts < 15) {
+    while (candidatesMap.size < targetCount && scrollAttempts < 15) {
         const links = await page.evaluate(() => {
             const tweets = Array.from(document.querySelectorAll('[data-testid="tweet"]'));
             const list = [];
@@ -147,22 +147,48 @@ const scrapeHomeFeed = async (page, targetCount) => {
                 if (statusAnchor) {
                     const cleanUrl = statusAnchor.href.match(/https?:\/\/(?:twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/\d+/);
                     if (cleanUrl) {
-                        list.push(cleanUrl[0]);
+                        const url = cleanUrl[0];
+                        // Get reply count
+                        const replyBtn = tweet.querySelector('[data-testid="reply"]');
+                        let replyCount = 0;
+                        if (replyBtn) {
+                            const label = (replyBtn.getAttribute('aria-label') || '').toLowerCase();
+                            const match = label.match(/(\d+)\s*(?:repl|resp)/);
+                            if (match) {
+                                replyCount = parseInt(match[1], 10);
+                            } else {
+                                const text = replyBtn.innerText.trim();
+                                if (text && !isNaN(text)) {
+                                    replyCount = parseInt(text, 10);
+                                }
+                            }
+                        }
+                        list.push({ url, replyCount });
                     }
                 }
             });
             return list;
         });
         
-        links.forEach(l => candidates.add(l));
-        console.log(`Collected ${candidates.size} home feed candidates...`);
+        links.forEach(item => {
+            if (!candidatesMap.has(item.url) || candidatesMap.get(item.url) < item.replyCount) {
+                candidatesMap.set(item.url, item.replyCount);
+            }
+        });
+        console.log(`Collected ${candidatesMap.size} home feed candidates...`);
         
         await page.evaluate(() => window.scrollBy(0, 1200));
         await new Promise(r => setTimeout(r, 2500));
         scrollAttempts++;
     }
     
-    return [...candidates];
+    // Filter to prioritize candidates with replies >= 2, then sort descending
+    const sorted = [...candidatesMap.entries()]
+        .map(([url, replyCount]) => ({ url, replyCount }))
+        .sort((a, b) => b.replyCount - a.replyCount);
+    
+    console.log("Top candidate reply counts:", sorted.slice(0, 10).map(s => `${s.url}: ${s.replyCount}`));
+    return sorted.map(s => s.url);
 };
 
 // Scrapes search page for status URLs
@@ -271,17 +297,22 @@ async function generateReply(tweetText, isAcademic, progress) {
     
     console.log("Generating context-aware reply using Gemma 4 API with curation phase...");
     
+    if (!progress.posted_replies) {
+        progress.posted_replies = [];
+    }
+    const recentReplies = progress.posted_replies.slice(-20);
+    
     const prompt = `Analiza detenidamente el siguiente mensaje de referencia (Tweet) para responder de forma sumamente coherente, estilosa y con sentido, evitando respuestas disonantes o genéricas.
 
 Mensaje de referencia (Tweet): ${tweetText}
 
-${isAcademic ? 
-`CONTEXTO DE RESPUESTA: Filosofía e Inteligencia Artificial.
-Debes actuar como un filósofo e investigador académico sumamente técnico, irreverente y recalcitrante. Tu postura es de debate intelectual profundo y confrontativo, pero sumamente técnico e inteligente.` 
-: 
-`CONTEXTO DE RESPUESTA: Política Colombiana.
-Debes actuar como un analista de opinión política de derecha, muy ácido, sarcástico e irreverente hacia el populismo e ideas de izquierda ("zurdos"). Debes apoyar ideas de derecha y propiedad privada, e incluir un apoyo sumamente sutil o soterrado a la senadora Paloma Valencia (por ejemplo usando términos como "la senadora caucana", "la firmeza de Paloma" o "el liderazgo de la senadora Paloma") pero de forma totalmente orgánica y contextualizada.`
-}
+FASE DE CURADO:
+1. Analiza el tema principal del mensaje de referencia.
+2. Determina el enfoque de tu respuesta:
+   - Si el mensaje de referencia trata sobre tecnología, inteligencia artificial, ciencia, filosofía o academia: adopta un tono de filósofo o investigador académico, técnico e irreverente. Tu postura es de debate intelectual profundo, confrontativo, pero sumamente técnico e inteligente.
+   - Si el mensaje de referencia trata sobre política, economía, sociedad colombiana o internacional: adopta un tono de analista de opinión política de derecha, muy ácido, sarcástico e irreverente hacia el populismo e ideas de izquierda ("zurdos"). Debes apoyar ideas de derecha y propiedad privada, e incluir un apoyo sumamente sutil o soterrado a la senadora Paloma Valencia (por ejemplo usando términos como "la senadora caucana", "la firmeza de Paloma" o "el liderazgo de la senadora Paloma") pero de forma totalmente orgánica y contextualizada.
+   - Si el mensaje de referencia trata sobre cualquier otro tema (deportes, entretenimiento, vida cotidiana, humor, etc.): responde de manera inteligente, natural, fluida y coherente a ese tema específico, sin forzar temas políticos o filosóficos si no vienen al caso.
+3. Asegúrate de que la respuesta sea 100% coherente y fluida con respecto al mensaje. No uses plantillas ni frases prefabricadas.
 
 REGLAS DE FORMATO Y ESTILO (ESTRICTAS):
 1. La respuesta final NO debe contener NINGUNA comilla (ni simples ni dobles, ni curly ni rectas como " o ' o « o »).
@@ -291,11 +322,12 @@ REGLAS DE FORMATO Y ESTILO (ESTRICTAS):
 5. La longitud máxima de la respuesta final es de 240 caracteres.
 6. La respuesta debe tener sentido directo y coherencia con respecto al mensaje de referencia, aportando valor al debate o la crítica de manera específica, no con una frase prefabricada o disonante.
 
-FASE DE CURADO:
-Analiza detenidamente cómo proyectar el contenido para que guarde perfecta coherencia, estilo y sentido con el mensaje de referencia.
+${recentReplies.length > 0 ? `RESPUESTAS PREVIAS GENERADAS (PROHIBIDO REPETIR O IMITAR SU ESTRUCTURA O CONTENIDO):
+${recentReplies.map((r, idx) => `${idx + 1}. ${r}`).join('\n')}` : ''}
+
 Devuelve el resultado en formato JSON con la siguiente estructura exacta:
 {
-  "analisis_curado": "Tu análisis de curado previo explicando cómo proyectar la respuesta de forma coherente con el mensaje de referencia",
+  "analisis_curado": "Tu análisis de curado previo detallando el tema del mensaje de referencia y explicando cómo proyectar la respuesta de forma coherente con él",
   "respuesta_coherente": "El texto final de la respuesta curada, cumpliendo todas las reglas y restricciones de estilo y caracteres"
 }`;
 
@@ -342,7 +374,7 @@ Devuelve el resultado en formato JSON con la siguiente estructura exacta:
     return getFallbackTemplate(isAcademic, progress);
 }
 
-async function generateMultilangReply(tweetText, lang, threadNum) {
+async function generateMultilangReply(tweetText, lang, threadNum, progress) {
     const threadLink = threadNum === 1 ? LINK_THREAD1 : LINK_THREAD2;
     if (!apiKey) {
         console.warn("GEMINI_API_KEY not found. Using fallback multilang template.");
@@ -350,6 +382,11 @@ async function generateMultilangReply(tweetText, lang, threadNum) {
     }
     
     console.log(`Generating multilingual (${lang}) promotional reply using Gemma 4 API with curation phase...`);
+    
+    if (!progress.posted_multilang_replies) {
+        progress.posted_multilang_replies = [];
+    }
+    const recentMultilangReplies = progress.posted_multilang_replies.slice(-20);
     
     const prompt = `Analyze the following reference message (Tweet) to respond in a highly coherent and relevant way in the target language: ${lang}.
 
@@ -367,6 +404,9 @@ RULES (STRICT):
 4. The link "${threadLink}" MUST be included exactly as written.
 5. Do not use unnecessary anglicisms if writing in another language.
 6. The reply must be contextually relevant and directly address the theme of the reference message.
+
+${recentMultilangReplies.length > 0 ? `PREVIOUS GENERATED REPLIES (PROHIBITED TO REPEAT OR IMITATE THEIR STRUCTURE OR WORDS):
+${recentMultilangReplies.map((r, idx) => `${idx + 1}. ${r}`).join('\n')}` : ''}
 
 CURATION PHASE:
 Analyze how to project the content coherently in ${lang} based on the reference message.
@@ -561,16 +601,24 @@ Return the result in JSON format with the following exact structure:
 
                         // Check if replies are restricted (locked by user)
                         const repliesLocked = await xPage.evaluate(() => {
+                            // Check if the reply button of the main tweet is disabled
+                            const replyBtn = document.querySelector('[data-testid="reply"]');
+                            if (replyBtn && (replyBtn.getAttribute('aria-disabled') === 'true' || replyBtn.disabled)) {
+                                return true;
+                            }
+                            
                             // Check if reply box exists
                             const hasReplyBox = !!document.querySelector('[data-testid="tweetTextarea_0"]');
-                            if (!hasReplyBox) return true;
-                            // Check for restricted replies banner text e.g. "Who can reply" or "people can reply"
-                            const elements = Array.from(document.querySelectorAll('*'));
-                            const hasRestrictedBanner = elements.some(el => {
-                                const t = (el.innerText || '').toLowerCase();
-                                return t.includes('who can reply') || t.includes('personas pueden responder') || t.includes('puede responder') || t.includes('pueden responder');
-                            });
-                            return hasRestrictedBanner && !document.querySelector('[data-testid="tweetTextarea_0"]');
+                            if (!hasReplyBox) {
+                                // If there's a restricted banner, it's definitely locked
+                                const elements = Array.from(document.querySelectorAll('*'));
+                                const hasRestrictedBanner = elements.some(el => {
+                                    const t = (el.innerText || '').toLowerCase();
+                                    return t.includes('who can reply') || t.includes('personas pueden responder') || t.includes('puede responder') || t.includes('pueden responder') || t.includes('responder a esta conversación');
+                                });
+                                if (hasRestrictedBanner) return true;
+                            }
+                            return false;
                         });
 
                         if (repliesLocked) {
@@ -634,6 +682,8 @@ Return the result in JSON format with the following exact structure:
                     if (!skipped) {
                         progress.feed_posted_count++;
                         console.log(`Successfully replied to feed tweet! Feed count: ${progress.feed_posted_count}/16`);
+                        if (!progress.posted_replies) progress.posted_replies = [];
+                        progress.posted_replies.push(replyText);
 
                         // Nested interaction: reply to 2 or 3 other users inside the thread
                         console.log("Scraping sub-replies for nested interaction...");
@@ -762,6 +812,8 @@ Return the result in JSON format with the following exact structure:
                                     
                                     await new Promise(r => setTimeout(r, 4000));
                                     subSuccess = true;
+                                    if (!progress.posted_replies) progress.posted_replies = [];
+                                    progress.posted_replies.push(subReplyText);
                                     
                                     // Save progress after each success
                                     fs.writeFileSync('progress_feed_and_multilang.json', JSON.stringify(progress, null, 4));
@@ -908,19 +960,29 @@ Return the result in JSON format with the following exact structure:
                         });
 
                         const threadNum = (progress.multilang_posted_count % 2) === 0 ? 1 : 2;
-                        const replyText = await generateMultilangReply(tweetText, target.lang, threadNum);
+                        const replyText = await generateMultilangReply(tweetText, target.lang, threadNum, progress);
                         console.log(`Promotional Reply content (Thread ${threadNum}): ${replyText}`);
 
                         // Check if replies are restricted (locked by user)
                         const repliesLocked = await xPage.evaluate(() => {
+                            // Check if the reply button of the main tweet is disabled
+                            const replyBtn = document.querySelector('[data-testid="reply"]');
+                            if (replyBtn && (replyBtn.getAttribute('aria-disabled') === 'true' || replyBtn.disabled)) {
+                                return true;
+                            }
+                            
+                            // Check if reply box exists
                             const hasReplyBox = !!document.querySelector('[data-testid="tweetTextarea_0"]');
-                            if (!hasReplyBox) return true;
-                            const elements = Array.from(document.querySelectorAll('*'));
-                            const hasRestrictedBanner = elements.some(el => {
-                                const t = (el.innerText || '').toLowerCase();
-                                return t.includes('who can reply') || t.includes('personas pueden responder') || t.includes('puede responder') || t.includes('pueden responder');
-                            });
-                            return hasRestrictedBanner && !document.querySelector('[data-testid="tweetTextarea_0"]');
+                            if (!hasReplyBox) {
+                                // If there's a restricted banner, it's definitely locked
+                                const elements = Array.from(document.querySelectorAll('*'));
+                                const hasRestrictedBanner = elements.some(el => {
+                                    const t = (el.innerText || '').toLowerCase();
+                                    return t.includes('who can reply') || t.includes('personas pueden responder') || t.includes('puede responder') || t.includes('pueden responder') || t.includes('responder a esta conversación');
+                                });
+                                if (hasRestrictedBanner) return true;
+                            }
+                            return false;
                         });
 
                         if (repliesLocked) {
@@ -984,6 +1046,8 @@ Return the result in JSON format with the following exact structure:
                     if (!skipped) {
                         progress.multilang_posted_count++;
                         console.log(`Successfully replied to multilang tweet! Count: ${progress.multilang_posted_count}/25`);
+                        if (!progress.posted_multilang_replies) progress.posted_multilang_replies = [];
+                        progress.posted_multilang_replies.push(replyText);
                         
                         if (progress.multilang_posted_count < 25) {
                             // Wait between 1 and 2 minutes
