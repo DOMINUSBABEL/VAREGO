@@ -560,6 +560,7 @@ Return the result in JSON format with the following exact structure:
                 let success = false;
                 let skipped = false;
                 let retries = 0;
+                let replyText = '';
                 
                 while (!success && retries < 3) {
                     try {
@@ -596,7 +597,7 @@ Return the result in JSON format with the following exact structure:
                         const isAcademic = /ia\b|ai\b|inteligencia\s+artificial|artificial\s+intelligence|filosofia|filosófico|philosophy|hilo|algoritmo|silicio|machine\s+learning|hegel|ontology|epistemology|conciencia|consciousness/i.test(tweetText);
                         console.log(`Classified tweet as: ${isAcademic ? 'ACADEMIC' : 'POLITICAL'}`);
 
-                        const replyText = await generateReply(tweetText, isAcademic, progress);
+                        replyText = await generateReply(tweetText, isAcademic, progress);
                         console.log(`Reply content: ${replyText}`);
 
                         // Check if replies are restricted (locked by user)
@@ -927,6 +928,7 @@ Return the result in JSON format with the following exact structure:
                 let success = false;
                 let skipped = false;
                 let retries = 0;
+                let replyText = '';
                 
                 while (!success && retries < 3) {
                     try {
@@ -960,7 +962,7 @@ Return the result in JSON format with the following exact structure:
                         });
 
                         const threadNum = (progress.multilang_posted_count % 2) === 0 ? 1 : 2;
-                        const replyText = await generateMultilangReply(tweetText, target.lang, threadNum, progress);
+                        replyText = await generateMultilangReply(tweetText, target.lang, threadNum, progress);
                         console.log(`Promotional Reply content (Thread ${threadNum}): ${replyText}`);
 
                         // Check if replies are restricted (locked by user)
