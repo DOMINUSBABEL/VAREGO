@@ -1,0 +1,27 @@
+# System & Environment Files
+node_modules/
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
+
+# Puppeteer browser profiles & session data
+browser_profile/
+progress_threads.json
+progress.json
+progress_backup.json
+
+# Python caching & workspace files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Output directories
+output/
+error_post_*.png
