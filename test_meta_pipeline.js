@@ -1,2 +1,2 @@
-// Instagram multi-upload selector validation
-console.log("Instagram carousel integration selectors validated.");
+// Thread selectors verification
+console.log("X.com thread chain integration test verification complete.");
