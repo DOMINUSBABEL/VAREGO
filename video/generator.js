@@ -60,4 +60,16 @@ function compileVideoPanRight(imagePath, outputPath, duration = 8, fps = 25) {
     });
 }
 
-module.exports = { renderCardImage, compileVideoStatic, compileVideoPanLeft, compileVideoPanRight };
+function compileVideoZoomOut(imagePath, outputPath, duration = 8, fps = 25) {
+    return new Promise((resolve, reject) => {
+        const totalFrames = duration * fps;
+        const filter = `zoompan=z='1.1-0.1*(on/${totalFrames})':d=${totalFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920`;
+        const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -vf "${filter}" -c:v libx264 -t ${duration} -r ${fps} -pix_fmt yuv420p "${outputPath}"`;
+        exec(cmd, (err) => {
+            if (err) return reject(err);
+            resolve(outputPath);
+        });
+    });
+}
+
+module.exports = { renderCardImage, compileVideoStatic, compileVideoPanLeft, compileVideoPanRight, compileVideoZoomOut };
