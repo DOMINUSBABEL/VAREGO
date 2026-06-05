@@ -8,7 +8,7 @@ function injectHashtags(caption, topic) {
         tecnologia: "#AI #IA #Technology #Future #Tech #Innovation",
         capital: "#Economics #Market #FreeMarket #Capitalism #Business",
         geopolitica: "#Geopolitics #GlobalOrder #Strategy #History #World",
-        colombia: "#Colombia #Politica #Electoral #Nacion #Bogota #Medellin"
+        colombia: "#Colombia #Politica #Electoral #Nacion"
     };
     const cleanTopic = (topic || '').toLowerCase();
     let selectedTags = tags.geopolitica;
@@ -20,4 +20,14 @@ function injectHashtags(caption, topic) {
     return `${caption}\n\n${selectedTags}`;
 }
 
-module.exports = { truncateCaption, injectHashtags };
+function addSmartEmojis(caption, topic) {
+    const cleanTopic = (topic || '').toLowerCase();
+    let prefix = '✦ ';
+    if (cleanTopic.includes('tecnol')) prefix = '🤖 ';
+    else if (cleanTopic.includes('capital')) prefix = '📈 ';
+    else if (cleanTopic.includes('colombia')) prefix = '🇨🇴 ';
+    
+    return `${prefix}${caption}`;
+}
+
+module.exports = { truncateCaption, injectHashtags, addSmartEmojis };
