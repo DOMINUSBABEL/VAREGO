@@ -6,11 +6,10 @@ const { FacebookPublisher } = require('./facebook');
 const { BusinessSuitePublisher } = require('./business_suite');
 const { renderCardImage, compileVideoDynamic } = require('../video/generator');
 
-// Read config file safely
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'meta_config.json'), 'utf8'));
 
 async function processCampaign() {
-    console.log("Starting Varego Meta Scheduling Campaign...");
+    console.log("Starting Varego Meta Scheduling Campaign with Retry & Error Capture...");
     
     const postsPath = path.join(__dirname, '..', 'meta_posts.json');
     if (!fs.existsSync(postsPath)) {
@@ -24,7 +23,6 @@ async function processCampaign() {
     
     if (fs.existsSync(progressPath)) {
         progress = JSON.parse(fs.readFileSync(progressPath, 'utf8'));
-        console.log(`Resuming Meta campaign from index ${progress}`);
     }
     
     for (let i = progress; i < posts.length; i++) {
@@ -33,7 +31,7 @@ async function processCampaign() {
         
         let videoPath = post.video_path;
         if (!videoPath || !fs.existsSync(videoPath)) {
-            console.log("Generating video asset from post contents...");
+            console.log("Generating video asset...");
             const tempImg = path.join(__dirname, `temp_card_${i}.png`);
             videoPath = path.join(__dirname, `temp_video_${i}.mp4`);
             
@@ -47,45 +45,73 @@ async function processCampaign() {
         let success = true;
         
         if (config.businessSuite.enabled) {
-            try {
-                console.log("Publishing via Meta Business Suite...");
-                const suite = new BusinessSuitePublisher();
-                await suite.publish(videoPath, post.text);
-            } catch (err) {
-                console.error("Meta Business Suite publish error:", err.message);
-                success = false;
+            let retries = 0;
+            let suiteSuccess = false;
+            while (retries < 3 && !suiteSuccess) {
+                try {
+                    console.log(`Publishing via Meta Business Suite (Attempt ${retries+1})...`);
+                    const suite = new BusinessSuitePublisher();
+                    await suite.publish(videoPath, post.text);
+                    suiteSuccess = true;
+                } catch (err) {
+                    retries++;
+                    console.error(`Meta Business Suite attempt ${retries} failed:`, err.message);
+                    if (retries === 3) success = false;
+                    await new Promise(r => setTimeout(r, 5000));
+                }
             }
         } else {
             if (config.instagram.enabled) {
-                try {
-                    console.log("Publishing to Instagram...");
-                    const ig = new InstagramPublisher();
-                    await ig.publish(videoPath, post.text);
-                } catch (err) {
-                    console.error("Instagram publish error:", err.message);
-                    success = false;
+                let retries = 0;
+                let igSuccess = false;
+                while (retries < 3 && !igSuccess) {
+                    try {
+                        console.log(`Publishing to Instagram (Attempt ${retries+1})...`);
+                        const ig = new InstagramPublisher();
+                        await ig.publish(videoPath, post.text);
+                        igSuccess = true;
+                    } catch (err) {
+                        retries++;
+                        console.error(`Instagram attempt ${retries} failed:`, err.message);
+                        if (retries === 3) success = false;
+                        await new Promise(r => setTimeout(r, 5000));
+                    }
                 }
             }
             if (config.facebook.enabled) {
-                try {
-                    console.log("Publishing to Facebook...");
-                    const fb = new FacebookPublisher();
-                    await fb.publish(videoPath, post.text);
-                } catch (err) {
-                    console.error("Facebook publish error:", err.message);
-                    success = false;
+                let retries = 0;
+                let fbSuccess = false;
+                while (retries < 3 && !fbSuccess) {
+                    try {
+                        console.log(`Publishing to Facebook (Attempt ${retries+1})...`);
+                        const fb = new FacebookPublisher();
+                        await fb.publish(videoPath, post.text);
+                        fbSuccess = true;
+                    } catch (err) {
+                        retries++;
+                        console.error(`Facebook attempt ${retries} failed:`, err.message);
+                        if (retries === 3) success = false;
+                        await new Promise(r => setTimeout(r, 5000));
+                    }
                 }
             }
         }
         
         if (config.tiktok.enabled) {
-            try {
-                console.log("Publishing to TikTok...");
-                const tt = new TikTokPublisher();
-                await tt.publish(videoPath, post.text);
-            } catch (err) {
-                console.error("TikTok publish error:", err.message);
-                success = false;
+            let retries = 0;
+            let ttSuccess = false;
+            while (retries < 3 && !ttSuccess) {
+                try {
+                    console.log(`Publishing to TikTok (Attempt ${retries+1})...`);
+                    const tt = new TikTokPublisher();
+                    await tt.publish(videoPath, post.text);
+                    ttSuccess = true;
+                } catch (err) {
+                    retries++;
+                    console.error(`TikTok attempt ${retries} failed:`, err.message);
+                    if (retries === 3) success = false;
+                    await new Promise(r => setTimeout(r, 5000));
+                }
             }
         }
         
@@ -94,7 +120,7 @@ async function processCampaign() {
             progress = i + 1;
             fs.writeFileSync(progressPath, JSON.stringify(progress));
         } else {
-            console.error(`Post ${i+1} encountered errors. Stopping campaign execution.`);
+            console.error(`Post ${i+1} failed all retries. Pausing campaign.`);
             break;
         }
     }
