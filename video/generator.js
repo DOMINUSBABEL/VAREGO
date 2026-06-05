@@ -48,4 +48,21 @@ function compileVideoStatic(imagePath, outputPath, duration = 8, fps = 25) {
     });
 }
 
-module.exports = { renderCardImage, compileVideoStatic };
+function compileVideoDynamic(imagePath, outputPath, duration = 8, fps = 25) {
+    return new Promise((resolve, reject) => {
+        console.log(`Compiling dynamic video (Zoompan) with FFmpeg...`);
+        const totalFrames = duration * fps;
+        const zoompanFilter = `zoompan=z='min(zoom+0.0008,1.08)':d=${totalFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1080x1920`;
+        const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -vf "${zoompanFilter}" -c:v libx264 -t ${duration} -r ${fps} -pix_fmt yuv420p "${outputPath}"`;
+        exec(cmd, (err, stdout, stderr) => {
+            if (err) {
+                console.error(`FFmpeg dynamic compile error:`, stderr);
+                return reject(err);
+            }
+            console.log(`Dynamic video compiled successfully: ${outputPath}`);
+            resolve(outputPath);
+        });
+    });
+}
+
+module.exports = { renderCardImage, compileVideoStatic, compileVideoDynamic };
