@@ -30,6 +30,7 @@ async function processCampaign() {
         console.log(`Processing Meta post ${i+1}/${posts.length}: Topic: ${post.topic}`);
         
         let videoPath = post.video_path;
+        let generatedOnTheFly = false;
         if (!videoPath || !fs.existsSync(videoPath)) {
             console.log("Generating video asset...");
             const tempImg = path.join(__dirname, `temp_card_${i}.png`);
@@ -40,6 +41,7 @@ async function processCampaign() {
             
             if (fs.existsSync(tempImg)) fs.unlinkSync(tempImg);
             post.video_path = videoPath;
+            generatedOnTheFly = true;
         }
         
         let success = true;
@@ -112,6 +114,18 @@ async function processCampaign() {
                     if (retries === 3) success = false;
                     await new Promise(r => setTimeout(r, 5000));
                 }
+            }
+        }
+        
+        // Clean up generated video if published successfully and generated on the fly
+        if (success && generatedOnTheFly) {
+            try {
+                if (fs.existsSync(videoPath)) {
+                    fs.unlinkSync(videoPath);
+                    console.log(`Cleaned up temporary video file: ${videoPath}`);
+                }
+            } catch (cleanupErr) {
+                console.error("Failed to clean up temporary video file:", cleanupErr.message);
             }
         }
         
