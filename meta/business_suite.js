@@ -14,97 +14,73 @@ class BusinessSuitePublisher {
     
     async init() {
         this.browser = await puppeteer.launch({
-            executablePath: 'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+            executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
             headless: this.headless,
             userDataDir: this.profileDir,
-            ignoreDefaultArgs: ["--enable-automation"],
-            args: [
-                '--window-size=1400,950',
-                '--disable-notifications',
-                '--disable-blink-features=AutomationControlled',
-                '--no-sandbox'
-            ]
+            args: ['--window-size=1400,950', '--disable-notifications', '--no-sandbox']
         });
         const pages = await this.browser.pages();
         this.page = pages.length > 0 ? pages[0] : await this.browser.newPage();
-        await this.page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
         await this.page.setViewport({ width: 1400, height: 950 });
     }
     
     async verifyLogin() {
-        console.log("Verifying Meta Business Suite session...");
         await this.page.goto('https://business.facebook.com/latest/composer', { waitUntil: 'domcontentloaded' });
         await new Promise(r => setTimeout(r, 8000));
-        
-        const currentUrl = this.page.url();
-        if (currentUrl.includes('login')) {
-            throw new Error("Not logged in to Business Suite. Please run authentication utility first.");
-        }
-        console.log("Business Suite login verified successfully.");
-        return true;
     }
     
-    async uploadMedia(filePath) {
-        if (!fs.existsSync(filePath)) {
-            throw new Error(`File does not exist: ${filePath}`);
-        }
-        console.log(`Uploading media to Meta Business Suite: ${filePath}`);
-        
-        const fileInputSelector = 'input[type="file"]';
-        await this.page.waitForSelector(fileInputSelector, { timeout: 20000 });
-        const fileInput = await this.page.$(fileInputSelector);
-        await fileInput.uploadFile(filePath);
-        await new Promise(r => setTimeout(r, 8000));
-    }
-    
-    async finalizePost(caption) {
-        console.log("Entering caption in Meta Business Suite...");
-        
-        const editorSelector = '[contenteditable="true"], textarea';
-        await this.page.waitForSelector(editorSelector, { visible: true, timeout: 15000 });
-        await this.page.click(editorSelector);
-        await new Promise(r => setTimeout(r, 500));
-        
-        await this.page.keyboard.type(caption, { delay: 10 });
-        await new Promise(r => setTimeout(r, 2000));
-        
-        console.log("Clicking Publish button...");
-        const published = await this.page.evaluate(() => {
-            const buttons = Array.from(document.querySelectorAll('div[role="button"], button'));
-            const pubBtn = buttons.find(b => {
-                const txt = (b.innerText || '').trim().toLowerCase();
-                return txt.includes('publicar') || txt.includes('publish') || txt.includes('compartir') || txt.includes('share');
-            });
-            if (pubBtn) {
-                pubBtn.click();
-                return true;
-            }
-            return false;
-        });
-        
-        if (!published) {
-            throw new Error("Could not click Publish button in Meta Business Suite");
-        }
-        
-        console.log("Waiting for upload and publish completion...");
-        await new Promise(r => setTimeout(r, 15000));
-        console.log("Meta Business Suite publication successful!");
-    }
-    
-    async publish(filePath, caption) {
+    async publishThread(texts, filePaths = []) {
         await this.init();
         try {
             await this.verifyLogin();
-            await this.uploadMedia(filePath);
-            await this.finalizePost(caption);
+            
+            // Loop through thread slides
+            for (let i = 0; i < texts.length; i++) {
+                console.log(`Publishing thread slide ${i+1}/${texts.length}`);
+                
+                const editor = '[contenteditable="true"], textarea';
+                await this.page.waitForSelector(editor);
+                await this.page.click(editor);
+                
+                // Clear and write
+                await this.page.keyboard.down('Control');
+                await this.page.keyboard.press('A');
+                await this.page.keyboard.up('Control');
+                await this.page.keyboard.press('Backspace');
+                
+                await this.page.keyboard.type(texts[i], { delay: 10 });
+                await new Promise(r => setTimeout(r, 2000));
+                
+                if (filePaths[i]) {
+                    const fileInput = await this.page.$('input[type="file"]');
+                    await fileInput.uploadFile(filePaths[i]);
+                    await new Promise(r => setTimeout(r, 8000));
+                }
+                
+                // Publish button
+                await this.page.evaluate(() => {
+                    const buttons = Array.from(document.querySelectorAll('div[role="button"], button'));
+                    const pub = buttons.find(b => b.innerText.includes('Publicar') || b.innerText.includes('Publish'));
+                    if (pub) pub.click();
+                });
+                
+                await new Promise(r => setTimeout(r, 10000));
+                
+                // Wait for reload or navigate back
+                if (i < texts.length - 1) {
+                    await this.page.goto('https://business.facebook.com/latest/composer', { waitUntil: 'domcontentloaded' });
+                    await new Promise(r => setTimeout(r, 5000));
+                }
+            }
         } finally {
             await this.close();
         }
     }
     
-    async close() {
-        if (this.browser) await this.browser.close();
+    async publish(filePath, caption) {
+        await this.publishThread([caption], [filePath]);
     }
+    
+    async close() { if (this.browser) await this.browser.close(); }
 }
-
 module.exports = { BusinessSuitePublisher };
