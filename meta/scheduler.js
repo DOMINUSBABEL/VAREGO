@@ -35,11 +35,14 @@ async function processCampaign(headlessOption) {
         headless = await askHeadlessMode();
     }
     
+    const isDryRun = process.argv.includes('--dry-run');
+    if (isDryRun) {
+        console.log("=== RUNNING IN DRY RUN MODE ===");
+    }
+    
     console.log(`Starting Varego Meta Scheduling Campaign (Headless: ${headless}) with Carousel & Thread support...`);
     const postsPath = path.join(__dirname, '..', 'meta_posts.json');
     if (!fs.existsSync(postsPath)) return;
     const posts = JSON.parse(fs.readFileSync(postsPath, 'utf8'));
-    
-    // Core loops remain same but ready to load multiple slides
 }
 module.exports = { processCampaign };
