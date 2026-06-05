@@ -7,9 +7,35 @@ const { BusinessSuitePublisher } = require('./business_suite');
 const { renderCardImage, compileVideoDynamic } = require('../video/generator');
 
 const config = JSON.parse(fs.readFileSync(path.join(__dirname, 'meta_config.json'), 'utf8'));
+const readline = require('readline');
 
-async function processCampaign() {
-    console.log("Starting Varego Meta Scheduling Campaign with Retry & Error Capture...");
+function askHeadlessMode() {
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+        rl.question("¿Desea ejecutar el navegador de META en modo invisible (headless)? (s/n, por defecto 'n'): ", (answer) => {
+            rl.close();
+            const lower = answer.trim().toLowerCase();
+            resolve(lower === 's' || lower === 'si' || lower === 'y' || lower === 'yes');
+        });
+    });
+}
+
+async function processCampaign(headlessOption) {
+    let headless = false;
+    if (headlessOption !== undefined) {
+        headless = headlessOption;
+    } else if (process.argv.includes('--headless')) {
+        headless = true;
+    } else if (process.argv.includes('--headful')) {
+        headless = false;
+    } else {
+        headless = await askHeadlessMode();
+    }
+    
+    console.log(`Starting Varego Meta Scheduling Campaign (Headless: ${headless}) with Retry & Error Capture...`);
     
     const postsPath = path.join(__dirname, '..', 'meta_posts.json');
     if (!fs.existsSync(postsPath)) {
@@ -52,7 +78,7 @@ async function processCampaign() {
             while (retries < 3 && !suiteSuccess) {
                 try {
                     console.log(`Publishing via Meta Business Suite (Attempt ${retries+1})...`);
-                    const suite = new BusinessSuitePublisher();
+                    const suite = new BusinessSuitePublisher(null, { headless });
                     await suite.publish(videoPath, post.text);
                     suiteSuccess = true;
                 } catch (err) {
@@ -69,7 +95,7 @@ async function processCampaign() {
                 while (retries < 3 && !igSuccess) {
                     try {
                         console.log(`Publishing to Instagram (Attempt ${retries+1})...`);
-                        const ig = new InstagramPublisher();
+                        const ig = new InstagramPublisher(null, { headless });
                         await ig.publish(videoPath, post.text);
                         igSuccess = true;
                     } catch (err) {
@@ -86,7 +112,7 @@ async function processCampaign() {
                 while (retries < 3 && !fbSuccess) {
                     try {
                         console.log(`Publishing to Facebook (Attempt ${retries+1})...`);
-                        const fb = new FacebookPublisher();
+                        const fb = new FacebookPublisher(null, { headless });
                         await fb.publish(videoPath, post.text);
                         fbSuccess = true;
                     } catch (err) {
@@ -105,7 +131,7 @@ async function processCampaign() {
             while (retries < 3 && !ttSuccess) {
                 try {
                     console.log(`Publishing to TikTok (Attempt ${retries+1})...`);
-                    const tt = new TikTokPublisher();
+                    const tt = new TikTokPublisher(null, { headless });
                     await tt.publish(videoPath, post.text);
                     ttSuccess = true;
                 } catch (err) {

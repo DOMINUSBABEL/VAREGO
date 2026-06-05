@@ -3,13 +3,37 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
+
+function askHeadlessMode() {
+    return new Promise((resolve) => {
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+        rl.question("¿Desea ejecutar el navegador en modo invisible (headless)? (s/n, por defecto 'n'): ", (answer) => {
+            rl.close();
+            const lower = answer.trim().toLowerCase();
+            resolve(lower === 's' || lower === 'si' || lower === 'y' || lower === 'yes');
+        });
+    });
+}
 
 (async () => {
     try {
+        let headless = false;
+        if (process.argv.includes('--headless')) {
+            headless = true;
+        } else if (process.argv.includes('--headful')) {
+            headless = false;
+        } else {
+            headless = await askHeadlessMode();
+        }
+
         if (process.argv.includes('--meta') || process.env.VAREGO_META === 'true') {
             console.log("Redirecting to VAREGO META scheduling campaign...");
             const { processCampaign } = require('./meta/scheduler');
-            await processCampaign();
+            await processCampaign(headless);
             return;
         }
 
@@ -31,7 +55,7 @@ const path = require('path');
             if (nextPostDate.getTime() < safeStart.getTime()) {
                 console.log(`Adjusting remaining post dates starting from: ${safeStart.toLocaleString()}`);
                 const remainingCount = posts.length - progress;
-                const totalHours = 3;
+                const totalHours = process.env.VAREGO_HOURS ? parseFloat(process.env.VAREGO_HOURS) : 3;
                 const totalSeconds = totalHours * 3600;
                 
                 // Generate random sorted offsets for the remaining posts
@@ -58,7 +82,7 @@ const path = require('path');
         console.log("Iniciando navegador paralelo (Modo Sigilo Anti-Bot)...");
         const browser = await puppeteer.launch({ 
             executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-            headless: false, 
+            headless: headless, 
             userDataDir: path.join(__dirname, 'browser_profile'),
             ignoreDefaultArgs: ["--enable-automation"],
             args: [

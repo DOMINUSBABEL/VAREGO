@@ -5,16 +5,17 @@ const path = require('path');
 const fs = require('fs');
 
 class InstagramPublisher {
-    constructor(profileDir) {
+    constructor(profileDir, options = {}) {
         this.profileDir = profileDir || path.join(__dirname, '..', 'browser_profile', 'instagram_profile');
+        this.headless = options.headless !== undefined ? options.headless : false;
         this.browser = null;
         this.page = null;
     }
     
     async init() {
         this.browser = await puppeteer.launch({
-            executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-            headless: false,
+            executablePath: 'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+            headless: this.headless,
             userDataDir: this.profileDir,
             ignoreDefaultArgs: ["--enable-automation"],
             args: [
