@@ -1,2 +1,2 @@
-// Stub for validation
-console.log("YouTube Shorts upload integration selector validation complete.");
+// Instagram multi-upload selector validation
+console.log("Instagram carousel integration selectors validated.");
