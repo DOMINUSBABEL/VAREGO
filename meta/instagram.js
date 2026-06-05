@@ -80,6 +80,81 @@ class InstagramPublisher {
         await new Promise(r => setTimeout(r, 5000));
     }
     
+    async finalizePost(caption) {
+        console.log("Finalizing Instagram post...");
+        
+        for (let i = 0; i < 2; i++) {
+            console.log(`Clicking next step ${i + 1}/2...`);
+            const nextBtnText = await this.page.evaluate(() => {
+                const buttons = Array.from(document.querySelectorAll('div[role="button"], button'));
+                const nextBtn = buttons.find(b => {
+                    const txt = (b.innerText || '').trim().toLowerCase();
+                    return txt === 'siguiente' || txt === 'next';
+                });
+                if (nextBtn) {
+                    nextBtn.click();
+                    return true;
+                }
+                return false;
+            });
+            if (!nextBtnText) {
+                console.log("Next button not found, executing fallback click...");
+                await this.page.evaluate(() => {
+                    const headers = Array.from(document.querySelectorAll('header'));
+                    for (const header of headers) {
+                        const buttons = Array.from(header.querySelectorAll('div[role="button"]'));
+                        if (buttons.length > 0) {
+                            buttons[buttons.length - 1].click();
+                        }
+                    }
+                });
+            }
+            await new Promise(r => setTimeout(r, 3000));
+        }
+        
+        console.log("Typing caption...");
+        const captionAreaSelector = 'div[aria-label="Escribe un pie de foto..."], div[aria-label="Write a caption..."], textarea';
+        await this.page.waitForSelector(captionAreaSelector, { visible: true, timeout: 15000 });
+        await this.page.click(captionAreaSelector);
+        await new Promise(r => setTimeout(r, 500));
+        
+        await this.page.keyboard.type(caption, { delay: 10 });
+        await new Promise(r => setTimeout(r, 2000));
+        
+        console.log("Clicking Share button...");
+        const shared = await this.page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('div[role="button"], button'));
+            const shareBtn = buttons.find(b => {
+                const txt = (b.innerText || '').trim().toLowerCase();
+                return txt === 'compartir' || txt === 'share';
+            });
+            if (shareBtn) {
+                shareBtn.click();
+                return true;
+            }
+            return false;
+        });
+        
+        if (!shared) {
+            throw new Error("Could not find Share button");
+        }
+        
+        console.log("Waiting for Instagram upload completion...");
+        await new Promise(r => setTimeout(r, 12000));
+        console.log("Instagram posting completed successfully!");
+    }
+    
+    async publish(filePath, caption) {
+        await this.init();
+        try {
+            await this.verifyLogin();
+            await this.uploadMedia(filePath);
+            await this.finalizePost(caption);
+        } finally {
+            await this.close();
+        }
+    }
+    
     async close() {
         if (this.browser) await this.browser.close();
     }
