@@ -6,6 +6,13 @@ const path = require('path');
 
 (async () => {
     try {
+        if (process.argv.includes('--meta') || process.env.VAREGO_META === 'true') {
+            console.log("Redirecting to VAREGO META scheduling campaign...");
+            const { processCampaign } = require('./meta/scheduler');
+            await processCampaign();
+            return;
+        }
+
         let posts = JSON.parse(fs.readFileSync(path.join('..', 'output', '177_posts', 'posts.json'), 'utf8'));
         
         let progress = 0;
