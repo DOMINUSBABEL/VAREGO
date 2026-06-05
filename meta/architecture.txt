@@ -1,0 +1,1 @@
+Details the multi-platform orchestrator flow from generate_posts.py to browser instances.
