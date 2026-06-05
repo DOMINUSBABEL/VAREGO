@@ -56,6 +56,51 @@ class BusinessSuitePublisher {
         await new Promise(r => setTimeout(r, 8000));
     }
     
+    async finalizePost(caption) {
+        console.log("Entering caption in Meta Business Suite...");
+        
+        const editorSelector = '[contenteditable="true"], textarea';
+        await this.page.waitForSelector(editorSelector, { visible: true, timeout: 15000 });
+        await this.page.click(editorSelector);
+        await new Promise(r => setTimeout(r, 500));
+        
+        await this.page.keyboard.type(caption, { delay: 10 });
+        await new Promise(r => setTimeout(r, 2000));
+        
+        console.log("Clicking Publish button...");
+        const published = await this.page.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('div[role="button"], button'));
+            const pubBtn = buttons.find(b => {
+                const txt = (b.innerText || '').trim().toLowerCase();
+                return txt.includes('publicar') || txt.includes('publish') || txt.includes('compartir') || txt.includes('share');
+            });
+            if (pubBtn) {
+                pubBtn.click();
+                return true;
+            }
+            return false;
+        });
+        
+        if (!published) {
+            throw new Error("Could not click Publish button in Meta Business Suite");
+        }
+        
+        console.log("Waiting for upload and publish completion...");
+        await new Promise(r => setTimeout(r, 15000));
+        console.log("Meta Business Suite publication successful!");
+    }
+    
+    async publish(filePath, caption) {
+        await this.init();
+        try {
+            await this.verifyLogin();
+            await this.uploadMedia(filePath);
+            await this.finalizePost(caption);
+        } finally {
+            await this.close();
+        }
+    }
+    
     async close() {
         if (this.browser) await this.browser.close();
     }
