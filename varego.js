@@ -3,32 +3,12 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
-
-function askHeadlessMode() {
-    return new Promise((resolve) => {
-        const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-        });
-        rl.question("¿Desea ejecutar el navegador en modo invisible (headless)? (s/n, por defecto 'n'): ", (answer) => {
-            rl.close();
-            const lower = answer.trim().toLowerCase();
-            resolve(lower === 's' || lower === 'si' || lower === 'y' || lower === 'yes');
-        });
-    });
-}
+const { getHeadlessOption } = require('./utils/headless_ask');
 
 (async () => {
     try {
-        let headless = false;
-        if (process.argv.includes('--headless')) {
-            headless = true;
-        } else if (process.argv.includes('--headful')) {
-            headless = false;
-        } else {
-            headless = await askHeadlessMode();
-        }
+        const headless = await getHeadlessOption("¿Desea ejecutar el navegador principal de X (Twitter) en modo invisible (headless) o mostrando el navegador para auditar el proceso de publicación? (s = invisible / n = mostrar para auditar, por defecto 'n'): ");
+
 
         if (process.argv.includes('--meta') || process.env.VAREGO_META === 'true') {
             console.log("Redirecting to VAREGO META scheduling campaign...");

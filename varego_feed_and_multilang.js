@@ -3,6 +3,7 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const fs = require('fs');
 const path = require('path');
+const { getHeadlessOption } = require('./utils/headless_ask');
 
 // Links to promote
 const LINK_THREAD1 = 'x.com/i/status/2059103530598703393';
@@ -474,10 +475,12 @@ Return the result in JSON format with the following exact structure:
             console.log("Resumed progress. Current stage:", progress.stage);
         }
 
+        const headless = await getHeadlessOption("¿Desea ejecutar el navegador de FEED/MULTILANG en modo invisible (headless) o mostrando el navegador para auditar el proceso de publicación? (s = invisible / n = mostrar para auditar, por defecto 'n'): ");
+
         console.log("Iniciando navegador paralelo (Modo Sigilo Anti-Bot)...");
         const browser = await puppeteer.launch({ 
             executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-            headless: false, 
+            headless: headless, 
             userDataDir: path.join(__dirname, 'browser_profile'),
             ignoreDefaultArgs: ["--enable-automation"],
             args: [

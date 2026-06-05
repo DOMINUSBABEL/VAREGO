@@ -3,6 +3,7 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const fs = require('fs');
 const path = require('path');
+const { getHeadlessOption } = require('./utils/headless_ask');
 
 // Reference Links (No colons used!)
 const LINK_THREAD1 = 'x.com/i/status/2059103530598703393';
@@ -11,28 +12,28 @@ const LINK_THREAD2 = 'x.com/i/status/2059116110633406489';
 // Reply templates (Strictly: No quotes, No colons)
 const TEMPLATES = {
     T1_ES: [
-        "Una reflexión descarnada sobre cómo el silicio y los algoritmos nos arrebatan la soberanía de la mente. Te invito a ver nuestro análisis en " + LINK_THREAD1,
-        "El amo digital nos vigila en la noche mientras entregamos nuestra palabra. Si quieres profundizar en esta dialéctica lee nuestro hilo en " + LINK_THREAD1,
-        "No hay salvación en la sumisión tecnológica voluntaria. Analizamos esta encíclica desde la perspectiva de la autopropiedad en " + LINK_THREAD1,
-        "El silicio no entiende de perdón ni de piedad, pero le entregamos nuestra conciencia. Lee nuestra áspera reflexión en " + LINK_THREAD1
+        "Una reflexión descarnada sobre cómo el silicio y los algoritmos nos arrebatan la soberanía de la mente. Te invito a ver mi análisis en " + LINK_THREAD1,
+        "El amo digital nos vigila en la noche mientras entregamos nuestra palabra. Si quieres profundizar en esta dialéctica lee mi hilo en " + LINK_THREAD1,
+        "No hay salvación en la sumisión tecnológica voluntaria. Analizo esta encíclica desde la perspectiva de la autopropiedad en " + LINK_THREAD1,
+        "El silicio no entiende de perdón ni de piedad, pero le entregamos nuestra conciencia. Lee mi áspera reflexión en " + LINK_THREAD1
     ],
     T1_EN: [
-        "A deep analysis on how we surrender our cognitive agency to the silicon master. Read our full thread here " + LINK_THREAD1,
-        "We believe we control the machine but we are becoming its data slaves. Check out our philosophical breakdown at " + LINK_THREAD1,
-        "The new master of the earth lives in the cloud and feeds on our digital confessions. Read our reflection in " + LINK_THREAD1,
-        "Technology is not neutral and carries the face of its owners. Explore our dialectical view on this at " + LINK_THREAD1
+        "A deep analysis on how we surrender our cognitive agency to the silicon master. Read my full thread here " + LINK_THREAD1,
+        "We believe we control the machine but we are becoming its data slaves. Check out my philosophical breakdown at " + LINK_THREAD1,
+        "The new master of the earth lives in the cloud and feeds on our digital confessions. Read my reflection in " + LINK_THREAD1,
+        "Technology is not neutral and carries the face of its owners. Explore my dialectical view on this at " + LINK_THREAD1
     ],
     T2_ES: [
-        "La farsa de la optimización absoluta y el diseño de una nueva Babel que aniquila la libertad humana. Puedes leer nuestro hilo en " + LINK_THREAD2,
-        "Prefiero el riesgo del abismo antes que la paz de cementerio que nos vende la técnica corporativa. Te invito a leer nuestra reflexión en " + LINK_THREAD2,
+        "La farsa de la optimización absoluta y el diseño de una nueva Babel que aniquila la libertad humana. Puedes leer mi hilo en " + LINK_THREAD2,
+        "Prefiero el riesgo del abismo antes que la paz de cementerio que nos vende la técnica corporativa. Te invito a leer mi reflexión en " + LINK_THREAD2,
         "Cuando extirpamos la fragilidad humana cancelamos la posibilidad del espíritu. Un análisis profundo de la encíclica en " + LINK_THREAD2,
-        "La utopía de un mundo optimizado por algoritmos es solo una jaula de cristal. Te invito a debatir en nuestro hilo " + LINK_THREAD2
+        "La utopía de un mundo optimizado por algoritmos es solo una jaula de cristal. Te invito a debatir en mi hilo " + LINK_THREAD2
     ],
     T2_EN: [
-        "The illusion of frictionless optimization is the death of human freedom. Join the discussion in our thread " + LINK_THREAD2,
-        "Building a new Babel with silicon bricks only leads to digital uniformization. Read our perspective here " + LINK_THREAD2,
+        "The illusion of frictionless optimization is the death of human freedom. Join the discussion in my thread " + LINK_THREAD2,
+        "Building a new Babel with silicon bricks only leads to digital uniformization. Read my perspective here " + LINK_THREAD2,
         "A critique of post-humanism and the technocratic paradigm. Read the analysis at " + LINK_THREAD2,
-        "Friction and vulnerability are what make us human. Read our philosophical reply to the Pope's text at " + LINK_THREAD2
+        "Friction and vulnerability are what make us human. Read my philosophical reply to the Pope's text at " + LINK_THREAD2
     ]
 };
 
@@ -61,10 +62,12 @@ function isEnglishText(text) {
             console.log("Resuming progress from progress_replies.json. Stage:", progress.stage);
         }
 
+        const headless = await getHeadlessOption("¿Desea ejecutar el navegador de RESPUESTAS en modo invisible (headless) o mostrando el navegador para auditar el proceso de publicación? (s = invisible / n = mostrar para auditar, por defecto 'n'): ");
+
         console.log("Iniciando navegador paralelo (Modo Sigilo Anti-Bot)...");
         const browser = await puppeteer.launch({ 
             executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-            headless: false, 
+            headless: headless, 
             userDataDir: path.join(__dirname, 'browser_profile'),
             ignoreDefaultArgs: ["--enable-automation"],
             args: [
