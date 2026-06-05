@@ -48,6 +48,38 @@ class InstagramPublisher {
         return true;
     }
     
+    async uploadMedia(filePath) {
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`File does not exist: ${filePath}`);
+        }
+        console.log(`Starting media upload for: ${filePath}`);
+        
+        const createBtnSelector = 'svg[aria-label="Nueva publicación"], svg[aria-label="New post"]';
+        await this.page.waitForSelector(createBtnSelector, { visible: true, timeout: 15000 });
+        
+        await this.page.evaluate((sel) => {
+            const svg = document.querySelector(sel);
+            if (svg) {
+                let parent = svg.parentElement;
+                while (parent && parent.tagName !== 'BUTTON' && parent.tagName !== 'A') {
+                    parent = parent.parentElement;
+                }
+                if (parent) parent.click();
+                else svg.click();
+            }
+        }, createBtnSelector);
+        
+        await new Promise(r => setTimeout(r, 2000));
+        
+        const fileInputSelector = 'input[type="file"]';
+        await this.page.waitForSelector(fileInputSelector, { timeout: 15000 });
+        const fileInput = await this.page.$(fileInputSelector);
+        
+        console.log("Uploading file...");
+        await fileInput.uploadFile(filePath);
+        await new Promise(r => setTimeout(r, 5000));
+    }
+    
     async close() {
         if (this.browser) await this.browser.close();
     }
