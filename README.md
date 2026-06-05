@@ -135,3 +135,33 @@ In the latest deployment matrix for May 2026:
 ---
 
 *Developed and deployed under strict analytical heuristics by the Actagen / Babylon.IA ecosystem.*
+
+## Funcionalidad de Generación de Video y Publicación en META
+
+Varego ahora incorpora capacidades completas de generación de vídeo dinámico vertical (ideal para Reels, TikTok y Shorts) y publicación automatizada en Instagram, TikTok y Facebook.
+
+### Requisitos Adicionales
+1. **FFmpeg**: Asegúrese de tener `ffmpeg` instalado en su sistema y en el PATH del sistema.
+2. **Chrome**: Instalación de Google Chrome en Windows (`C:\Program Files\Google\Chrome\Application\chrome.exe`).
+
+### Instrucciones de Uso
+
+#### 1. Autenticación de Sesiones
+Ejecute la utilidad de autenticación para iniciar sesión manualmente en la plataforma de su elección:
+```bash
+npm run meta:auth
+```
+Siga las instrucciones en la consola para elegir plataforma (Instagram, TikTok, Facebook o Business Suite) y realizar el login en la ventana abierta. Esto guardará las cookies y la sesión persistente.
+
+#### 2. Generación de Contenido
+Puede generar posts estructurados para Meta mediante el script de Python:
+```bash
+python generate_meta_posts.py
+```
+
+#### 3. Publicación Automatizada
+Una vez que las sesiones estén activas en `browser_profile`, puede iniciar la publicación automatizada de la campaña:
+```bash
+npm run meta:publish
+```
+Esto generará los vídeos dinámicos a partir de las plantillas HTML (con gradientes y glassmorphism) sobre la marcha y los publicará de forma secuencial.
