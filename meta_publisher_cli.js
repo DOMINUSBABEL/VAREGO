@@ -2,32 +2,28 @@ const { processCampaign } = require('./meta/scheduler');
 const { renderCardImage, compileVideoDynamic } = require('./video/generator');
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 
 const args = process.argv.slice(2);
 
-if (args.includes('--auth')) {
-    require('./meta/auth');
-} else if (args.includes('--generate-video')) {
-    const textIdx = args.indexOf('--text');
-    const topicIdx = args.indexOf('--topic');
-    const outIdx = args.indexOf('--out');
+async function runWizard() {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const ask = (q) => new Promise(r => rl.question(q, r));
+    console.log("=== VAREGO CLI WIZARD ===");
+    const enableIg = await ask("Enable Instagram posting? (y/n): ");
+    const enableTt = await ask("Enable TikTok posting? (y/n): ");
     
-    if (textIdx === -1 || topicIdx === -1 || outIdx === -1) {
-        console.log("Usage: node meta_publisher_cli.js --generate-video --text <text> --topic <topic> --out <filepath>");
-        process.exit(1);
-    }
-    
-    const text = args[textIdx + 1];
-    const topic = args[topicIdx + 1];
-    const out = args[outIdx + 1];
-    
-    (async () => {
-        const tempImg = out + '.png';
-        await renderCardImage(text, topic, tempImg, { theme: 'warm' });
-        await compileVideoDynamic(tempImg, out, 8, 25);
-        if (fs.existsSync(tempImg)) fs.unlinkSync(tempImg);
-        console.log(`Video generated successfully at ${out}`);
-    })();
+    const configPath = path.join(__dirname, 'meta', 'meta_config.json');
+    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    config.instagram.enabled = enableIg.toLowerCase() === 'y';
+    config.tiktok.enabled = enableTt.toLowerCase() === 'y';
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+    console.log("Config updated.");
+    rl.close();
+}
+
+if (args.includes('--wizard')) {
+    runWizard();
 } else {
     processCampaign();
 }
