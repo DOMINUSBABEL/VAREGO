@@ -8,7 +8,7 @@ function generateHtmlTemplate(text, topic, options = {}) {
     };
     const themeName = options.theme || 'warm';
     const bgGradient = themes[themeName] || themes.warm;
-    const padding = text.length < 100 ? '120px' : '80px';
-    return `<div style="background: ${bgGradient}; padding: ${padding}; width: 1080px; height: 1920px;">${text}</div>`;
+    const topicSize = topic.length > 20 ? '18px' : '24px';
+    return `<div style="background: ${bgGradient}; width: 1080px; height: 1920px;"><h1 style="font-size: ${topicSize}">${topic}</h1>${text}</div>`;
 }
 module.exports = { generateHtmlTemplate };
