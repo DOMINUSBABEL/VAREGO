@@ -30,6 +30,32 @@ class BusinessSuitePublisher {
         await this.page.setViewport({ width: 1400, height: 950 });
     }
     
+    async verifyLogin() {
+        console.log("Verifying Meta Business Suite session...");
+        await this.page.goto('https://business.facebook.com/latest/composer', { waitUntil: 'domcontentloaded' });
+        await new Promise(r => setTimeout(r, 8000));
+        
+        const currentUrl = this.page.url();
+        if (currentUrl.includes('login')) {
+            throw new Error("Not logged in to Business Suite. Please run authentication utility first.");
+        }
+        console.log("Business Suite login verified successfully.");
+        return true;
+    }
+    
+    async uploadMedia(filePath) {
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`File does not exist: ${filePath}`);
+        }
+        console.log(`Uploading media to Meta Business Suite: ${filePath}`);
+        
+        const fileInputSelector = 'input[type="file"]';
+        await this.page.waitForSelector(fileInputSelector, { timeout: 20000 });
+        const fileInput = await this.page.$(fileInputSelector);
+        await fileInput.uploadFile(filePath);
+        await new Promise(r => setTimeout(r, 8000));
+    }
+    
     async close() {
         if (this.browser) await this.browser.close();
     }
