@@ -35,6 +35,22 @@ class YouTubeShortsPublisher {
         return true;
     }
     
+    async uploadVideo(filePath) {
+        if (!fs.existsSync(filePath)) throw new Error(`Video file does not exist: ${filePath}`);
+        console.log("Starting YouTube Shorts upload...");
+        await this.page.click('#create-icon');
+        await new Promise(r => setTimeout(r, 1000));
+        
+        const uploadBtn = await this.page.$('#upload-button');
+        if (uploadBtn) await uploadBtn.click();
+        else await this.page.evaluate(() => document.querySelector('[test-id="upload-beta"]').click());
+        
+        await new Promise(r => setTimeout(r, 2000));
+        const fileInput = await this.page.$('input[type="file"]');
+        await fileInput.uploadFile(filePath);
+        await new Promise(r => setTimeout(r, 8000));
+    }
+    
     async close() {
         if (this.browser) await this.browser.close();
     }
