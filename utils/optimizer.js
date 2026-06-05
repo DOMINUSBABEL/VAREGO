@@ -36,4 +36,8 @@ function appendUtmParameters(url, platform) {
     return `${url}?utm_source=${cleanPlatform}&utm_medium=social&utm_campaign=varego_matrix`;
 }
 
-module.exports = { truncateCaption, injectHashtags, addSmartEmojis, appendUtmParameters };
+function stripTwitterMentions(caption) {
+    return caption.replace(/@[a-zA-Z0-9_]+/g, '').replace(/\s+/g, ' ').strip();
+}
+
+module.exports = { truncateCaption, injectHashtags, addSmartEmojis, appendUtmParameters, stripTwitterMentions };
