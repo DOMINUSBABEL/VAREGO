@@ -30,6 +30,24 @@ class InstagramPublisher {
         await this.page.setViewport({ width: 1280, height: 900 });
     }
     
+    async verifyLogin() {
+        console.log("Verifying Instagram login session...");
+        await this.page.goto('https://www.instagram.com/', { waitUntil: 'domcontentloaded' });
+        await new Promise(r => setTimeout(r, 4000));
+        
+        const isLoggedIn = await this.page.evaluate(() => {
+            return document.querySelector('svg[aria-label="Nueva publicación"]') !== null || 
+                   document.querySelector('svg[aria-label="New post"]') !== null ||
+                   document.querySelector('a[href="/direct/inbox/"]') !== null;
+        });
+        
+        if (!isLoggedIn) {
+            throw new Error("User is not logged in to Instagram. Please run authentication utility first.");
+        }
+        console.log("Instagram login verified successfully.");
+        return true;
+    }
+    
     async close() {
         if (this.browser) await this.browser.close();
     }
