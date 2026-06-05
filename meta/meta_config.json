@@ -18,7 +18,7 @@
     "supportAlbums": true
   },
   "youtubeShorts": {
-    "enabled": false,
+    "enabled": true,
     "url": "https://studio.youtube.com/",
     "profileName": "youtube_shorts_profile"
   },
