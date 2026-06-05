@@ -9,8 +9,7 @@ function generateHtmlTemplate(text, topic, options = {}) {
     };
     const themeName = options.theme || 'warm';
     const bgGradient = themes[themeName] || themes.warm;
-    const borderRadius = options.borderRadius || '50px';
-    const shadow = options.shadowDepth || '0 40px 80px rgba(0,0,0,0.5)';
-    return `<div style="background: ${bgGradient}; border-radius: ${borderRadius}; box-shadow: ${shadow}; width: 1080px; height: 1920px;">${text}</div>`;
+    const watermark = options.watermarkUrl ? `<img src="${options.watermarkUrl}"/>` : '';
+    return `<div style="background: ${bgGradient}; width: 1080px; height: 1920px;">${watermark}${text}</div>`;
 }
 module.exports = { generateHtmlTemplate };
