@@ -9,7 +9,8 @@ function generateHtmlTemplate(text, topic, options = {}) {
     };
     const themeName = options.theme || 'warm';
     const bgGradient = themes[themeName] || themes.warm;
-    const border = themeName === 'minimalist' ? '1px solid #333' : 'none';
-    return `<div style="background: ${bgGradient}; border: ${border}; width: 1080px; height: 1920px;">${text}</div>`;
+    const borderRadius = options.borderRadius || '50px';
+    const shadow = options.shadowDepth || '0 40px 80px rgba(0,0,0,0.5)';
+    return `<div style="background: ${bgGradient}; border-radius: ${borderRadius}; box-shadow: ${shadow}; width: 1080px; height: 1920px;">${text}</div>`;
 }
 module.exports = { generateHtmlTemplate };
