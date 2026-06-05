@@ -6,34 +6,12 @@ const readline = require('readline');
 
 const args = process.argv.slice(2);
 
-async function runWizard() {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    const ask = (q) => new Promise(r => rl.question(q, r));
-    console.log("=== VAREGO CLI WIZARD ===");
-    const enableIg = await ask("Enable Instagram? (y/n): ");
-    const enableTt = await ask("Enable TikTok? (y/n): ");
-    
-    const configPath = path.join(__dirname, 'meta', 'meta_config.json');
-    const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    config.instagram.enabled = enableIg.toLowerCase() === 'y';
-    config.tiktok.enabled = enableTt.toLowerCase() === 'y';
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-    rl.close();
-}
-
-if (args.includes('--wizard')) {
-    runWizard();
-} else if (args.includes('--validate')) {
-    console.log("Checking VAREGO dependencies and files...");
-    const files = ['meta/meta_config.json', 'meta_posts.json', 'package.json'];
-    let valid = true;
-    for (const f of files) {
-        if (!fs.existsSync(f)) {
-            console.error(`Missing: ${f}`);
-            valid = false;
-        }
+if (args.includes('--reset-progress')) {
+    const progressPath = path.join(__dirname, 'meta', 'progress_meta.json');
+    if (fs.existsSync(progressPath)) {
+        fs.unlinkSync(progressPath);
+        console.log("Progress tracker reset successfully.");
     }
-    if (valid) console.log("Verified.");
 } else if (args.includes('--preview')) {
     const text = "Preview Text rendering visual styles.";
     (async () => {
