@@ -1,9 +1,14 @@
 const { generateHtmlTemplate } = require('./video/template');
+const { renderCardImage } = require('./video/generator');
 const fs = require('fs');
 
-const cyberpunkHtml = generateHtmlTemplate("Cyberpunk Test Text", "CYBERPUNK", { theme: "cyberpunk" });
-fs.writeFileSync('test_cyberpunk.html', cyberpunkHtml);
-
-const minimalistHtml = generateHtmlTemplate("Minimalist Test Text", "MINIMALIST", { theme: "minimalist" });
-fs.writeFileSync('test_minimalist.html', minimalistHtml);
-console.log("Test minimalist dark HTML generated.");
+(async () => {
+    // Generate slides images for carousel
+    for (let i = 0; i < 3; i++) {
+        await renderCardImage(`Slide ${i+1} Content`, "CAROUSEL", `slide_${i}.png`, {
+            slideIndex: i,
+            totalSlides: 3
+        });
+    }
+    console.log("Carousel test slides generated.");
+})();
