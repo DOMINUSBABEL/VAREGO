@@ -8,7 +8,7 @@ function generateHtmlTemplate(text, topic, options = {}) {
     };
     const themeName = options.theme || 'warm';
     const bgGradient = themes[themeName] || themes.warm;
-    const brand = options.brandName || 'VAREGO';
-    return `<div style="background: ${bgGradient}; width: 1080px; height: 1920px;"><span>${brand}</span>${text}</div>`;
+    const font = options.fontFamily || 'Outfit';
+    return `<div style="background: ${bgGradient}; font-family: ${font}; width: 1080px; height: 1920px;">${text}</div>`;
 }
 module.exports = { generateHtmlTemplate };
