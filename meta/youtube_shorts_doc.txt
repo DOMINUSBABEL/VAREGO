@@ -1,0 +1,1 @@
+YouTube Shorts requires manual session authentication to google studio and then running npm run meta:publish.
