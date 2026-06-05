@@ -30,4 +30,10 @@ function addSmartEmojis(caption, topic) {
     return `${prefix}${caption}`;
 }
 
-module.exports = { truncateCaption, injectHashtags, addSmartEmojis };
+function appendUtmParameters(url, platform) {
+    if (!url) return '';
+    const cleanPlatform = platform.toLowerCase();
+    return `${url}?utm_source=${cleanPlatform}&utm_medium=social&utm_campaign=varego_matrix`;
+}
+
+module.exports = { truncateCaption, injectHashtags, addSmartEmojis, appendUtmParameters };
