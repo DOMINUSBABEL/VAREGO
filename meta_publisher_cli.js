@@ -29,11 +29,17 @@ if (args.includes('--wizard')) {
     let valid = true;
     for (const f of files) {
         if (!fs.existsSync(f)) {
-            console.error(`Missing file: ${f}`);
+            console.error(`Missing: ${f}`);
             valid = false;
         }
     }
-    if (valid) console.log("All files verified successfully.");
+    if (valid) console.log("Verified.");
+} else if (args.includes('--preview')) {
+    const text = "Preview Text rendering visual styles.";
+    (async () => {
+        await renderCardImage(text, 'PREVIEW', 'preview.png');
+        console.log("Preview image generated at preview.png");
+    })();
 } else {
     processCampaign();
 }
