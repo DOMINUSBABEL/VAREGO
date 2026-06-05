@@ -66,6 +66,59 @@ class TikTokPublisher {
         await new Promise(r => setTimeout(r, 10000));
     }
     
+    async finalizePost(caption) {
+        console.log("Entering TikTok caption...");
+        const frames = this.page.frames();
+        let targetFrame = this.page;
+        for (const f of frames) {
+            if (f.url().includes('upload') || f.name().includes('upload')) {
+                targetFrame = f;
+                break;
+            }
+        }
+        
+        const editorSelector = '[contenteditable="true"], .public-DraftEditor-content, textarea';
+        await targetFrame.waitForSelector(editorSelector, { visible: true, timeout: 15000 });
+        await targetFrame.click(editorSelector);
+        await new Promise(r => setTimeout(r, 500));
+        
+        await this.page.keyboard.type(caption, { delay: 10 });
+        await new Promise(r => setTimeout(r, 2000));
+        
+        console.log("Clicking Post button...");
+        const posted = await targetFrame.evaluate(() => {
+            const buttons = Array.from(document.querySelectorAll('button'));
+            const postBtn = buttons.find(b => {
+                const txt = (b.innerText || '').trim().toLowerCase();
+                return txt.includes('post') || txt.includes('publicar');
+            });
+            if (postBtn) {
+                postBtn.click();
+                return true;
+            }
+            return false;
+        });
+        
+        if (!posted) {
+            await targetFrame.click('button[type="button"]');
+        }
+        
+        console.log("Waiting for post completion on TikTok...");
+        await new Promise(r => setTimeout(r, 10000));
+        console.log("TikTok post completed!");
+    }
+    
+    async publish(filePath, caption) {
+        await this.init();
+        try {
+            await this.verifyLogin();
+            await this.uploadVideo(filePath);
+            await this.finalizePost(caption);
+        } finally {
+            await this.close();
+        }
+    }
+    
     async close() {
         if (this.browser) await this.browser.close();
     }
