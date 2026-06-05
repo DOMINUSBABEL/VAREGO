@@ -31,24 +31,33 @@ class YouTubeShortsPublisher {
         if (this.page.url().includes('accounts.google.com')) {
             throw new Error("User is not logged in to YouTube Studio. Please authenticate first.");
         }
-        console.log("YouTube Studio session verified.");
         return true;
     }
     
     async uploadVideo(filePath) {
         if (!fs.existsSync(filePath)) throw new Error(`Video file does not exist: ${filePath}`);
-        console.log("Starting YouTube Shorts upload...");
+        console.log("Uploading Shorts video...");
         await this.page.click('#create-icon');
         await new Promise(r => setTimeout(r, 1000));
-        
-        const uploadBtn = await this.page.$('#upload-button');
-        if (uploadBtn) await uploadBtn.click();
-        else await this.page.evaluate(() => document.querySelector('[test-id="upload-beta"]').click());
-        
+        await this.page.click('#upload-button');
         await new Promise(r => setTimeout(r, 2000));
         const fileInput = await this.page.$('input[type="file"]');
         await fileInput.uploadFile(filePath);
         await new Promise(r => setTimeout(r, 8000));
+    }
+    
+    async setVisibility() {
+        console.log("Setting visibility to Public...");
+        // Click Visibility Tab
+        await this.page.click('#step-badge-3');
+        await new Promise(r => setTimeout(r, 2000));
+        
+        // Select Public radio button
+        await this.page.evaluate(() => {
+            const publicRadio = document.querySelector('[name="PUBLIC"]');
+            if (publicRadio) publicRadio.click();
+        });
+        await new Promise(r => setTimeout(r, 1000));
     }
     
     async close() {
