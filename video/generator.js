@@ -3,6 +3,7 @@ const StealthPlugin = require('puppeteer-extra-plugin-stealth');
 puppeteer.use(StealthPlugin());
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 const { generateHtmlTemplate } = require('./template');
 
 async function renderCardImage(text, topic, outputPath, options = {}) {
@@ -32,4 +33,19 @@ async function renderCardImage(text, topic, outputPath, options = {}) {
     }
 }
 
-module.exports = { renderCardImage };
+function compileVideoStatic(imagePath, outputPath, duration = 8, fps = 25) {
+    return new Promise((resolve, reject) => {
+        console.log(`Compiling static video with FFmpeg for ${duration}s...`);
+        const cmd = `ffmpeg -y -loop 1 -i "${imagePath}" -c:v libx264 -t ${duration} -r ${fps} -pix_fmt yuv420p "${outputPath}"`;
+        exec(cmd, (err, stdout, stderr) => {
+            if (err) {
+                console.error(`FFmpeg compile error:`, stderr);
+                return reject(err);
+            }
+            console.log(`Static video compiled successfully: ${outputPath}`);
+            resolve(outputPath);
+        });
+    });
+}
+
+module.exports = { renderCardImage, compileVideoStatic };
